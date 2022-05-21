@@ -1,4 +1,4 @@
-package com.github.networkexception.jaktintellij
+package org.serenityos.jakt
 
 import com.intellij.ide.highlighter.XmlFileType
 import com.intellij.psi.xml.XmlFile

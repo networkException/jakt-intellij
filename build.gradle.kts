@@ -14,6 +14,8 @@ plugins {
     id("org.jetbrains.changelog") version "1.3.1"
     // Gradle Qodana Plugin
     id("org.jetbrains.qodana") version "0.1.13"
+
+    id("org.jetbrains.grammarkit") version "2021.2.2"
 }
 
 group = properties("pluginGroup")
@@ -47,6 +49,8 @@ qodana {
     saveReport.set(true)
     showReport.set(System.getenv("QODANA_SHOW_REPORT")?.toBoolean() ?: false)
 }
+
+sourceSets["main"].java.srcDirs("src/main/gen")
 
 tasks {
     // Set the JVM compatibility versions
@@ -90,6 +94,10 @@ tasks {
         })
     }
 
+    runIde {
+        dependsOn(generateParser, generateLexer)
+    }
+
     // Configure UI tests plugin
     // Read more: https://github.com/JetBrains/intellij-ui-test-robot
     runIdeForUiTests {
@@ -113,4 +121,46 @@ tasks {
         // https://plugins.jetbrains.com/docs/intellij/deployment.html#specifying-a-release-channel
         channels.set(listOf(properties("pluginVersion").split('-').getOrElse(1) { "default" }.split('.').first()))
     }
+
+    generateParser {
+        // source bnf file
+        source.set("src/main/kotlin/org/serenityos/jakt/grammar/Jakt.bnf")
+
+        // optional, task-specific root for the generated files. Default: none
+        targetRoot.set("src/main/gen")
+
+        // path to a parser file, relative to the targetRoot
+        pathToParser.set("org/serenityos/jakt/parser/JaktParserGenerated.java")
+
+        // path to a directory with generated psi files, relative to the targetRoot
+        pathToPsiRoot.set("org/serenityos/jakt/psi")
+
+        // if set, the plugin will remove a parser output file and psi output directory before generating new ones. Default: false
+        purgeOldFiles.set(true)
+    }
+
+    generateLexer {
+        // source flex file
+        source.set("src/main/kotlin/org/serenityos/jakt/grammar/Jakt.flex")
+
+        // target directory for lexer
+        targetDir.set("src/main/gen/org/serenityos/jakt/lexer")
+
+        // target classname, target file will be targetDir/targetClass.java
+        targetClass.set("JaktLexer")
+
+        // if set, plugin will remove a lexer output file before generating new one. Default: false
+        purgeOldFiles.set(true)
+    }
+}
+
+grammarKit {
+    // Version of IntelliJ patched JFlex (see the link below), Default is 1.7.0-1
+    jflexRelease.set("1.7.0-1")
+
+    // Release version, tag, or short commit hash of Grammar-Kit to use (see link below). Default is 2021.1.2
+    grammarKitRelease.set("2021.1.2")
+
+    // Optionally provide an IntelliJ version to build the classpath for GenerateParser/GenerateLexer tasks
+    intellijRelease.set("203.7717.81")
 }
